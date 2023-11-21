@@ -23,18 +23,22 @@ async function requestJenkinsJob(jobName, params) {
     form: params,
     headers: {
       'Authorization': `Basic ${API_TOKEN}`
-    }
+    },
+    followRedirect: true,
+    followAllRedirects: true,
+    followOriginalHttpMethod: true
   }
-  await new Promise((resolve, reject) => request(req)
+  return new Promise((resolve, reject) => request(req)
     .on('response', (res) => {
-      core.info(`>>> Job is started!`);
-      resolve();
+      core.info(`>>> Job request submitted!`);
+      core.info(`>>> Job buildWithParameters => ${res.statusCode}`);
+      resolve(res);
     })
     .on("error", (err) => {
       core.setFailed(err);
       core.error(JSON.stringify(err));
       clearTimeout(timer);
-      reject();
+      reject(err);
     })
   );
 }
@@ -86,7 +90,8 @@ async function main() {
       core.info(`>>> Parameter ${params.toString()}`);
     }
     // POST API call
-    await requestJenkinsJob(jobName, params);
+    let res = await requestJenkinsJob(jobName, params);
+    core.info(`>>> Response: ${JSON.stringify(res)}`);
 
     // Waiting for job completion
     if (core.getInput('wait') == 'true') {
